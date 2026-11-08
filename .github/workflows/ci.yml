@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint-and-unit
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: claims
+          POSTGRES_PASSWORD: claims
+          POSTGRES_DB: claims
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U claims"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      KAFKA_BOOTSTRAP: localhost:9092
+      DATABASE_URL: postgresql://claims:claims@localhost:5432/claims
+    steps:
+      - uses: actions/checkout@v4
+      # A `services:` container cannot take command-line arguments, and Redpanda needs
+      # them (advertised address, single core), so the broker is started with docker run.
+      - name: Start Redpanda
+        run: |
+          docker run -d --name redpanda -p 9092:9092 \
+            docker.redpanda.com/redpandadata/redpanda:v24.2.7 \
+            redpanda start --smp=1 --memory=512M --overprovisioned --mode=dev-container \
+            --kafka-addr=0.0.0.0:9092 --advertise-kafka-addr=localhost:9092
+          for i in $(seq 1 30); do
+            docker exec redpanda rpk cluster health 2>/dev/null | grep -q 'Healthy:.*true' && exit 0
+            sleep 2
+          done
+          docker logs redpanda
+          exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: pytest -m integration -v
+      - if: failure()
+        run: docker logs redpanda | tail -50
