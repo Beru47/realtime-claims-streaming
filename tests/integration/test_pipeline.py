@@ -11,7 +11,7 @@ import uuid
 
 import psycopg
 import pytest
-from confluent_kafka import Consumer, Producer, TopicPartition
+from confluent_kafka import Consumer, KafkaException, Producer, TopicPartition
 from fastapi.testclient import TestClient
 
 from claims.config import Settings
@@ -103,6 +103,8 @@ class Pipeline:
         )
         try:
             return c.committed([TopicPartition(self.settings.topic, 0)], timeout=10)[0].offset
+        except KafkaException:  # coordinator not elected yet right after startup
+            return -1
         finally:
             c.close()
 
