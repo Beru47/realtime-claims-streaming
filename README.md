@@ -115,7 +115,7 @@ curl "localhost:8000/claims?status=PAID"
 curl localhost:8000/claims/<claim_id>
 ```
 
-- Grafana: http://localhost:3000 (anonymous access, dashboard "Claims streaming" is provisioned).
+- Grafana: http://localhost:3000 (read-only anonymous access, dashboard "Claims streaming" is provisioned).
 - Prometheus: http://localhost:9090
 - If a port is taken, override it: `POSTGRES_PORT=55432 GRAFANA_PORT=53000 make up`, and set `DATABASE_URL` to match.
 
