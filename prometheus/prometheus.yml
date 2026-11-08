@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+
+# The consumer and API run on the host (make consume / make api).
+scrape_configs:
+  - job_name: claims-consumer
+    static_configs:
+      - targets: ["host.docker.internal:8001"]
+  - job_name: claims-api
+    metrics_path: /metrics/
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
