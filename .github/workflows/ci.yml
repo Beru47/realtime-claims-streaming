@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -41,7 +41,7 @@ jobs:
       KAFKA_BOOTSTRAP: localhost:9092
       DATABASE_URL: postgresql://claims:claims@localhost:5432/claims
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # A `services:` container cannot take command-line arguments, and Redpanda needs
       # them (advertised address, single core), so the broker is started with docker run.
       - name: Start Redpanda
